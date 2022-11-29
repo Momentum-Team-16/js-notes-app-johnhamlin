@@ -1,5 +1,6 @@
 import { buildAndAppendElement } from './john_dom.js';
 
+const URL = 'http://localhost:3000/notes/';
 const todoForm = document.getElementById('todo-form');
 todoForm.addEventListener('submit', postTodo);
 const todosContainer = document.getElementById('todo-container');
@@ -11,43 +12,16 @@ class Todo {
   }
 }
 
-async function postTodo(event) {
-  event.preventDefault();
-  const todo = new Todo(
-    todoForm.elements['title'].value,
-    todoForm.elements['body'].value
-  );
-  todoForm.reset();
-
-  const todoFromServer = await fetch('http://localhost:3000/notes/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(todo),
-  }).then(r => r.json());
-
-  displayTodo(todoFromServer);
+function loadTodos(event) {
+  return fetch(URL).then(r => r.json());
 }
 
-async function updateTodo(todo, id) {
-  fetch(`http://localhost:3000/notes/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(todo),
-  }).then(r => r.json());
-}
-
-export function loadTodos(event) {
-  return fetch('http://localhost:3000/notes/').then(r => r.json());
-}
-
-export function displayTodos(todos) {
+function displayTodos(todos) {
   todosContainer.replaceChildren();
   todos.forEach(displayTodo);
 }
 
 function displayTodo(todo) {
-  console.log(todo);
-
   // Build the card, store it's ID as as data tag and add it to the DOM
   const card = document.createElement('div');
   card.classList.add('card', 'm-4', 'p-0', 'border-0', 'shadow-sm');
@@ -63,12 +37,14 @@ function displayTodo(todo) {
     'btn-outline-primary',
     'col-1',
     'mb-2',
+    'text-nowrap',
   ]);
   const saveBtn = buildAndAppendElement('save', false, 'button', [
     'btn',
     'btn-primary',
     'col-1',
     'mb-2',
+    'text-nowrap',
   ]);
   const body = buildAndAppendElement(todo.body, cardBody, 'h6', [
     'card-subtitle',
@@ -79,7 +55,9 @@ function displayTodo(todo) {
     'btn',
     'btn-outline-danger',
     'col-1',
+    'text-nowrap',
   ]);
+  todosContainer.appendChild(card);
 
   editBtn.addEventListener('click', event => {
     cardBody.replaceChild(saveBtn, editBtn);
@@ -104,11 +82,36 @@ function displayTodo(todo) {
   });
 
   deleteBtn.addEventListener('click', event => {
-    fetch(`http://localhost:3000/notes/${todo.id}`, {
+    fetch(`${URL}${todo.id}`, {
       method: 'DELETE',
     });
     todosContainer.removeChild(card);
   });
-
-  todosContainer.appendChild(card);
 }
+
+async function postTodo(event) {
+  event.preventDefault();
+  const todo = new Todo(
+    todoForm.elements['title'].value,
+    todoForm.elements['body'].value
+  );
+
+  const todoFromServer = await fetch(URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(todo),
+  }).then(r => r.json());
+
+  todoForm.reset();
+  displayTodo(todoFromServer);
+}
+
+async function updateTodo(todo, id) {
+  fetch(`${URL}${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(todo),
+  });
+}
+
+export { loadTodos, displayTodos };
