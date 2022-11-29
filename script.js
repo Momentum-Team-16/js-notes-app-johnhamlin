@@ -1,22 +1,16 @@
 'use strict';
 
+const todoForm = document.getElementById('todo-form');
+todoForm.addEventListener('submit', postTodo);
+const todosContainer = document.getElementById('todo-container');
+
+loadTodos().then(displayTodos);
+
 class Todo {
   constructor(title, body) {
     this.title = title;
     this.body = body;
   }
-}
-
-const todoForm = document.getElementById('todo-form');
-todoForm.addEventListener('submit', postTodo);
-const todosContainer = document.getElementById('todo-container');
-
-function buildAndAppendElement(text, parentElement, elementType, classesArr) {
-  const newElement = document.createElement(elementType);
-  if (classesArr) newElement.classList.add(...classesArr);
-  newElement.innerText = text;
-  parentElement.appendChild(newElement);
-  return newElement;
 }
 
 async function postTodo(event) {
@@ -25,6 +19,8 @@ async function postTodo(event) {
     todoForm.elements['title'].value,
     todoForm.elements['body'].value
   );
+  todoForm.reset();
+
   const todoFromServer = await fetch('http://localhost:3000/notes/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -34,35 +30,72 @@ async function postTodo(event) {
   displayTodo(todoFromServer);
 }
 
+async function updateTodo(todo, id) {
+  fetch(`http://localhost:3000/notes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(todo),
+  }).then(r => r.json());
+}
+
 function loadTodos(event) {
   return fetch('http://localhost:3000/notes/').then(r => r.json());
 }
 
 function displayTodos(todos) {
   todosContainer.replaceChildren();
-
-  todos.forEach(todo => {
-    console.log(todo);
-
-    displayTodo(todo);
-  });
+  todos.forEach(displayTodo);
 }
 
 function displayTodo(todo) {
+  console.log(todo);
+
   // Build the card, store it's ID as as data tag and add it to the DOM
   const card = document.createElement('div');
   card.classList.add('card', 'm-4', 'p-0', 'border-0', 'shadow-sm');
-  // card.dataset.id = id;
 
   // Create card body where all items will be added
   const cardBody = buildAndAppendElement('', card, 'div', ['card-body', 'row']);
-  buildAndAppendElement(todo.title, cardBody, 'h3', ['card-title', 'col-11']);
-  const deleteBtn = buildAndAppendElement('X', cardBody, 'button', [
+  const title = buildAndAppendElement(todo.title, cardBody, 'h3', [
+    'card-title',
+    'col-11',
+  ]);
+  const editBtn = buildAndAppendElement('edit', cardBody, 'button', [
+    'btn',
+    'btn-outline-primary',
+    'col-1',
+    'mb-2',
+  ]);
+  const saveBtn = buildAndAppendElement('save', false, 'button', [
+    'btn',
+    'btn-primary',
+    'col-1',
+    'mb-2',
+  ]);
+  const body = buildAndAppendElement(todo.body, cardBody, 'h6', [
+    'card-subtitle',
+    'mb-2',
+    'col-11',
+  ]);
+  const deleteBtn = buildAndAppendElement('delete', cardBody, 'button', [
     'btn',
     'btn-outline-danger',
     'col-1',
   ]);
-  buildAndAppendElement(todo.body, cardBody, 'h6', ['card-subtitle', 'mb-2']);
+
+  editBtn.addEventListener('click', event => {
+    cardBody.replaceChild(saveBtn, editBtn);
+    title.contentEditable = true;
+    body.contentEditable = true;
+  });
+
+  saveBtn.addEventListener('click', event => {
+    cardBody.replaceChild(editBtn, saveBtn);
+    title.contentEditable = false;
+    body.contentEditable = false;
+    const newTodo = new Todo(title.innerText, body.innerText);
+    updateTodo(newTodo, todo.id);
+  });
 
   deleteBtn.addEventListener('click', event => {
     fetch(`http://localhost:3000/notes/${todo.id}`, {
@@ -74,4 +107,10 @@ function displayTodo(todo) {
   todosContainer.appendChild(card);
 }
 
-loadTodos().then(todos => displayTodos(todos));
+function buildAndAppendElement(text, parentElement, elementType, classesArr) {
+  const newElement = document.createElement(elementType);
+  if (classesArr) newElement.classList.add(...classesArr);
+  newElement.innerText = text;
+  if (parentElement) parentElement.appendChild(newElement);
+  return newElement;
+}
