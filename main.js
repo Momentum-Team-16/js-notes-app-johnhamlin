@@ -1,4 +1,4 @@
-'use strict';
+import { buildAndAppendElement } from './modules/john_dom.js';
 
 const todoForm = document.getElementById('todo-form');
 todoForm.addEventListener('submit', postTodo);
@@ -113,12 +113,4 @@ function displayTodo(todo) {
   });
 
   todosContainer.appendChild(card);
-}
-
-function buildAndAppendElement(text, parentElement, elementType, classesArr) {
-  const newElement = document.createElement(elementType);
-  if (classesArr) newElement.classList.add(...classesArr);
-  newElement.innerText = text;
-  if (parentElement) parentElement.appendChild(newElement);
-  return newElement;
 }
