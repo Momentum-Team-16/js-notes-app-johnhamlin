@@ -87,6 +87,14 @@ function displayTodo(todo) {
     cardBody.replaceChild(saveBtn, editBtn);
     title.contentEditable = true;
     body.contentEditable = true;
+
+    // Move cursor to title field
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.setStart(title, 1);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
   });
 
   saveBtn.addEventListener('click', event => {
